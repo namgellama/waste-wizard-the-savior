@@ -1,0 +1,65 @@
+#include <Servo.h>
+
+#define TRIG_PIN 2
+#define ECHO_PIN 3
+#define IR_PIN A0
+#define SERVO_PIN 9
+#define DUSTBIN_CAPACITY 100 // in percentage
+
+Servo servo;
+
+bool isLidOpen = false;
+int dustbinLevel = 0;
+
+void setup() {
+  pinMode(TRIG_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+  pinMode(IR_PIN, INPUT);
+  servo.attach(SERVO_PIN);
+  Serial.begin(9600);
+}
+
+void loop() {
+  // Ultrasonic sensor
+  long duration, distance;
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+  duration = pulseIn(ECHO_PIN, HIGH);
+  distance = duration * 0.034 / 2;
+  Serial.print("Distance: ");
+  Serial.println(distance);
+  if (distance <= 20 && !isLidOpen) {
+    openLid();
+  }
+  else if (distance > 20 && isLidOpen) {
+    closeLid();
+  }
+  else if (distance > 20 && !isLidOpen) {
+    servo.write(0);
+    delay(2000);
+  }
+
+  // IR sensor
+  int irValue = analogRead(IR_PIN);
+  dustbinLevel = map(irValue, 0, 1023, 0, 100);
+  Serial.print("Dustbin Level: ");
+  Serial.println(dustbinLevel);
+  if (dustbinLevel >= 3 && dustbinLevel <= 10) {
+    Serial.println("Dustbin is full!");
+  }
+
+  delay(1000);
+}
+
+void openLid() {
+  servo.write(90);
+  delay(2000);
+  isLidOpen = true;
+}
+
+void closeLid() {
+  servo.write(0);
+  delay(2000);
+  isLidOpen = false;
+}
